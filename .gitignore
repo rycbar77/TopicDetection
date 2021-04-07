@@ -1,0 +1,8 @@
+*.pyc
+venv/
+/.idea/
+/.ipynb_checkpoints
+/kmeans_pytorch/.ipynb_checkpoints
+/answer/
+/test/
+/train/
