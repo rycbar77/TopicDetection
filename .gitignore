@@ -6,3 +6,4 @@ venv/
 /answer/
 /test/
 /train/
+*.txt

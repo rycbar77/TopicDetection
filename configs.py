@@ -1,3 +1,3 @@
-data_path = "./answer/"
-train_path = "./train/"
-test_path = "./test/"
+train_path = "../corpus/train/"
+test_path = "../corpus/test/"
+model_path = "./model/"

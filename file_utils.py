@@ -8,7 +8,7 @@ def get_files(path):
         for _dir in dirs:
             for _, _, files in os.walk(os.path.join(root, _dir)):
                 for file in files:
-                    file_li.append(os.path.join(_dir, file))
+                    file_li.append(os.path.join(root, _dir, file))
     return file_li
 
 
@@ -28,4 +28,14 @@ def recreate_dir(dir_path):
 
 
 if __name__ == "__main__":
-    file_list = get_files("./answer")
+    f_list = get_files("./corpus/train/")
+    l = [i.split("\\")[-1].split("-")[0] for i in f_list]
+    from collections import defaultdict
+
+    counts = defaultdict(int)
+    for i in l:
+        counts[i] += 1
+
+    print(counts)
+    print(list(counts))
+
