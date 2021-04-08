@@ -58,6 +58,7 @@ class KMeans(object):
         X = X.float()
         X = X.to(self.device)
         num_samples = len(X)
+        np.random.seed(self.random_state)
         indices = np.random.choice(num_samples, self.n_clusters, replace=False)
         initial_state = X[indices]
         dis = self.pairwise_distance_function(X, initial_state)

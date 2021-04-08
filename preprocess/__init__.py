@@ -4,7 +4,9 @@ from configs import *
 from collections import defaultdict
 from file_utils import get_files
 from training_utils import cut_txt
+import logging
 
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 stop_list = {"the", "of", "is", "and", "to", "in", "that", "we", "for", "an", "are", "by", "be", "as", "on",
              "with", "can", "if", "from", "which", "you", "it", "this", "then", "at", "have", "all", "not", "one",
              "has", "or", "that", "..", "...", "---"}
@@ -92,20 +94,22 @@ def load_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_pat
 
 if __name__ == "__main__":
     # train_model()
-    corpus, dict, tfidf, lsi, mSimilar = load_model(model_path)
-    pprint(len(corpus))
-    pprint(len(dict.token2id))
-    doc = """  长寿 秘方 疫力 ... 补品 笑一笑 增 寿命 心情  """
+
+    corpus, dict, tfidf, lsi, mSimilar = load_model("./model_test/")
+
+    # pprint(len(corpus))
+    # pprint(len(dict.token2id))
+    # doc=corpus[0]
     # 把测试语料转成词袋向量
-    vec_bow = dict.doc2bow(doc.split())
+    # vec_bow = dict.doc2bow(doc.split())
     # pprint(vec_bow)
     # 求tfidf值
-    vec_tfidf = tfidf[vec_bow]
+    # vec_tfidf = tfidf[doc]
     # pprint(vec_tfidf)
     # 转成lsi向量
-    vec_lsi = lsi[vec_tfidf]
+    # vec_lsi = lsi[vec_tfidf]
     # pprint(vec_lsi)
     # 求解相似性文档
-    sims = mSimilar[vec_lsi]
-    sims = sorted(enumerate(sims), key=lambda item: -item[1])
-    print(sims)
+    # sims = mSimilar[vec_lsi]
+    # sims = sorted(enumerate(sims), key=lambda item: -item[1])
+    # print(sims)

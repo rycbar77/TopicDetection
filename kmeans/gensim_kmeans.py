@@ -1,13 +1,10 @@
-from functools import partial
 import numpy as np
-
 import torch
 
 
 class KMeans(object):
     def __init__(self,
                  n_clusters,
-                 similarity,
                  tol=1e-4,
                  max_iter=300,
                  random_state=0,
@@ -20,109 +17,104 @@ class KMeans(object):
         self.choice_cluster = None
         self.initial_state = None
         self.random_state = random_state
-        self.pairwise_distance_function = similarity
+        self.mSimilar = None
 
-    def fit_predict(self, X):
-        X = X.float()
-        X = X.to(self.device)
-        num_samples = len(X)
+    def get_distance(self, initial_state):
+        dis = self.mSimilar[initial_state]
+        dis = dis.T
+        return torch.from_numpy(dis).to(self.device)
+
+    def fit_predict(self, X, mSimilar, X_array=None, X_torch=None):
+        self.mSimilar = mSimilar
+        if X_array is None:
+            X_array = np.array([[i[1] for i in doc] for doc in X])
+        if X_torch is None:
+            X_torch = torch.from_numpy(X_array).to(self.device)
+        num_samples = X.corpus.corpus.num_docs
+        np.random.seed(self.random_state)
         indices = np.random.choice(num_samples, self.n_clusters, replace=False)
-        initial_state = X[indices]
-        dis = self.pairwise_distance_function(X, initial_state)
-        choice_points = torch.argmin(dis, dim=0)
-        initial_state = X[choice_points]
-        initial_state = initial_state.to(self.device)
-
+        dis = self.get_distance(X[indices])
+        choice_points = np.array(torch.argmax(dis, dim=0))
+        initial_state = X_torch[choice_points]
+        choice_points = X[choice_points]
         iteration = 0
         while True:
-
-            dis = self.pairwise_distance_function(X, initial_state)
-
-            choice_cluster = torch.argmin(dis, dim=1)
-
+            dis = self.get_distance(choice_points)
+            choice_cluster = torch.argmax(dis, dim=1)
             initial_state_pre = initial_state.clone()
-
             for index in range(self.n_clusters):
-                selected = torch.nonzero(choice_cluster == index).squeeze().to(self.device)
-
-                selected = torch.index_select(X, 0, selected)
-
+                selected = torch.nonzero(torch.from_numpy(np.array(choice_cluster == index))).squeeze().to(self.device)
+                selected = torch.index_select(X_torch, 0, selected)
                 if selected.shape[0] == 0:
-                    selected = X[torch.randint(len(X), (1,))]
+                    selected = X_torch[torch.randint(len(X), (1,))]
 
                 initial_state[index] = selected.mean(dim=0)
-
             center_shift = torch.sum(
                 torch.sqrt(
                     torch.sum((initial_state - initial_state_pre) ** 2, dim=1)
                 ))
-
+            choice_points = [[(j, np.array(initial_state[i]).tolist()[j]) for j in range(20)] for i in
+                             range(len(initial_state))]
             iteration = iteration + 1
 
             if center_shift ** 2 < self.tol:
                 break
             if self.max_iter != 0 and iteration >= self.max_iter:
                 break
-
+            self.initial_state = initial_state.cpu()
         return choice_cluster.cpu(), initial_state.cpu()
 
-    def fit(self, X):
-        X = X.float()
-        X = X.to(self.device)
-        num_samples = len(X)
+    def fit(self, X, mSimilar, X_array=None, X_torch=None):
+        self.mSimilar = mSimilar
+        num_samples = X.corpus.corpus.num_docs
+        if X_array is None:
+            X_array = np.array([[i[1] for i in doc] for doc in X])
+        if X_torch is None:
+            X_torch = torch.from_numpy(X_array).to(self.device)
         np.random.seed(self.random_state)
         indices = np.random.choice(num_samples, self.n_clusters, replace=False)
-        self.initial_state = X[indices]
-        dis = self.pairwise_distance_function(X, self.initial_state)
-        choice_points = torch.argmin(dis, dim=0)
-        self.initial_state = X[choice_points]
-        self.initial_state = self.initial_state.to(self.device)
-
+        dis = self.get_distance(X[indices])
+        choice_points = np.array(torch.argmax(dis, dim=0))
+        self.initial_state = X_torch[choice_points]
+        choice_points = X[choice_points]
         iteration = 0
         while True:
-            dis = self.pairwise_distance_function(X, self.initial_state)
-            self.choice_cluster = torch.argmin(dis, dim=1)
-
+            dis = self.get_distance(choice_points)
+            choice_cluster = torch.argmax(dis, dim=1)
             initial_state_pre = self.initial_state.clone()
-
             for index in range(self.n_clusters):
-                selected = torch.nonzero(self.choice_cluster == index).squeeze().to(self.device)
-
-                selected = torch.index_select(X, 0, selected)
-
+                selected = torch.nonzero(
+                    torch.from_numpy(np.array(choice_cluster == index)).to(self.device)).squeeze().to(self.device)
+                selected = torch.index_select(X_torch, 0, selected)
                 if selected.shape[0] == 0:
-                    selected = X[torch.randint(len(X), (1,))]
-
+                    selected = X_torch[torch.randint(len(X), (1,))]
                 self.initial_state[index] = selected.mean(dim=0)
-
             center_shift = torch.sum(
                 torch.sqrt(
                     torch.sum((self.initial_state - initial_state_pre) ** 2, dim=1)
                 ))
-
+            choice_points = [[(j, np.array(self.initial_state[i]).tolist()[j]) for j in range(20)] for i in
+                             range(len(self.initial_state))]
             iteration = iteration + 1
 
             if center_shift ** 2 < self.tol:
                 break
             if self.max_iter != 0 and iteration >= self.max_iter:
                 break
+
         self.cluster_centers = self.initial_state
         return self
 
     def predict(self, X):
-        X = X.float()
-        X = X.to(self.device)
-
-        dis = self.pairwise_distance_function(X, self.initial_state)
-        choice_cluster = torch.argmin(dis, dim=1)
+        dis = self.get_distance(X)
+        choice_cluster = torch.argmax(dis, dim=1)
 
         return choice_cluster.cpu()
 
-
-if __name__ == "__main__":
-    x = np.random.randn(1000, 2) / 6
-    x = torch.from_numpy(x)
-    indices = np.random.choice(len(x), 3, replace=False)
-    initial_state = x[indices]
-    dis = pairwise_euclidean(x, initial_state)
-    print(dis)
+# if __name__ == "__main__":
+#     x = np.random.randn(1000, 2) / 6
+#     x = torch.from_numpy(x)
+#     indices = np.random.choice(len(x), 3, replace=False)
+#     initial_state = x[indices]
+#     dis = pairwise_euclidean(x, initial_state)
+#     print(dis)
