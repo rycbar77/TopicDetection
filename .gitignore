@@ -6,5 +6,7 @@ venv/
 /answer/
 /test/
 /train/
-*.txt
 /preprocess/model_test/
+/corpus/
+/preprocess/model_2/
+/preprocess/model_test_2/

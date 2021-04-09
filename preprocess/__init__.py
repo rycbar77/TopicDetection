@@ -34,14 +34,16 @@ def process_corpus(path):
         for token in text:
             frequency[token] += 1
 
-    processed_corpus = [[token for token in text if frequency[token] > 1] for text in texts]
+    processed_corpus = [[token for token in text if frequency[token] > 1 and len(token) > 2] for text in texts]
     return processed_corpus
 
 
-def train_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_path='model.tfidf',
+def train_model(train_path, num_topics=20, path="", corpus_path='corpus.mm', dic_path='model.dic',
+                tfidf_path='model.tfidf',
                 lsi_path='model.lsi', mSimilar_path='model.mSimilar'):
     """
     To train and save models
+    :param train_path:
     :param path: If all the models are stored in the same directory, use path to describe the dir path
     :param corpus_path: corpus path
     :param dic_path: dictionary path
@@ -60,7 +62,7 @@ def train_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_pa
     tfidf.save(path + tfidf_path)
     corpus_tfidf = tfidf[bow_corpus]
 
-    lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=20)
+    lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics)
     corpus_lsi = lsi[corpus_tfidf]
     lsi.save(path + lsi_path)
     mSimilar = similarities.MatrixSimilarity(corpus_lsi)
@@ -93,9 +95,10 @@ def load_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_pat
 
 
 if __name__ == "__main__":
-    # train_model()
+    train_model(train_path, 25, "./model_2/")
+    train_model(test_path, 25, "./model_test_2/")
 
-    corpus, dict, tfidf, lsi, mSimilar = load_model("./model_test/")
+    # corpus, dict, tfidf, lsi, mSimilar = load_model("./model_test/")
 
     # pprint(len(corpus))
     # pprint(len(dict.token2id))

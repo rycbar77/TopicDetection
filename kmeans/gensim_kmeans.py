@@ -53,8 +53,8 @@ class KMeans(object):
                 torch.sqrt(
                     torch.sum((initial_state - initial_state_pre) ** 2, dim=1)
                 ))
-            choice_points = [[(j, np.array(initial_state[i]).tolist()[j]) for j in range(20)] for i in
-                             range(len(initial_state))]
+            choice_points = [[(j, np.array(initial_state[i]).tolist()[j]) for j in range(initial_state.shape[1])] for i
+                             in range(len(initial_state))]
             iteration = iteration + 1
 
             if center_shift ** 2 < self.tol:
@@ -93,8 +93,9 @@ class KMeans(object):
                 torch.sqrt(
                     torch.sum((self.initial_state - initial_state_pre) ** 2, dim=1)
                 ))
-            choice_points = [[(j, np.array(self.initial_state[i]).tolist()[j]) for j in range(20)] for i in
-                             range(len(self.initial_state))]
+            choice_points = [
+                [(j, np.array(self.initial_state[i]).tolist()[j]) for j in range(self.initial_state.shape[1])] for i in
+                range(len(self.initial_state))]
             iteration = iteration + 1
 
             if center_shift ** 2 < self.tol:
@@ -105,10 +106,14 @@ class KMeans(object):
         self.cluster_centers = self.initial_state
         return self
 
-    def predict(self, X):
-        dis = self.get_distance(X)
+    def predict(self, mSimilar):
+        tmp = self.mSimilar
+        self.mSimilar = mSimilar
+        choice_points = [[(j, np.array(self.initial_state[i]).tolist()[j]) for j in range(self.initial_state.shape[1])]
+                         for i in range(len(self.initial_state))]
+        dis = self.get_distance(choice_points)
         choice_cluster = torch.argmax(dis, dim=1)
-
+        self.mSimilar = tmp
         return choice_cluster.cpu()
 
 # if __name__ == "__main__":
