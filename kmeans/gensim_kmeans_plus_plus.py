@@ -13,7 +13,6 @@ class KMeansPlusPlus(KMeans):
         index = np.random.randint(0, m)
         indices.append(index)
         cluster_centers.append(points[index])
-        seed(self.random_state)
         for i in range(1, k):
             choice_points = [[(j, np.array(cluster_centers[ii]).tolist()[j]) for j in range(n)] for ii in
                              range(i)]
@@ -23,7 +22,7 @@ class KMeansPlusPlus(KMeans):
             ind = [[i for i in range(m)], choice_cluster]
             dis = dis[ind].squeeze()
             sum_all = torch.sum(dis).item()
-            sum_all *= random()
+            sum_all *= np.random.rand()
             for j, di in enumerate(dis):
                 sum_all -= di.item()
                 if sum_all > 0:
