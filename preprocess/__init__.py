@@ -22,9 +22,9 @@ def get_stop_words():
             stop_list.add(s)
 
 
-def process_corpus(path):
+def process_corpus(path, topK=None):
     get_stop_words()
-    text_corpus = cut_txt(get_files(path))
+    text_corpus = cut_txt(get_files(path, topK))
 
     texts = [[word for word in document.split() if word not in stop_list]
              for document in text_corpus]
@@ -39,8 +39,7 @@ def process_corpus(path):
 
 
 def train_model(train_path, num_topics=20, path="", corpus_path='corpus.mm', dic_path='model.dic',
-                tfidf_path='model.tfidf',
-                lsi_path='model.lsi', mSimilar_path='model.mSimilar'):
+                tfidf_path='model.tfidf', lsi_path='model.lsi', mSimilar_path='model.mSimilar', topK=None):
     """
     To train and save models
     :param train_path:
@@ -52,7 +51,7 @@ def train_model(train_path, num_topics=20, path="", corpus_path='corpus.mm', dic
     :param mSimilar_path: MatrixSimilarity path
     :return:
     """
-    processed_corpus = process_corpus(train_path)
+    processed_corpus = process_corpus(train_path, topK)
     dictionary = corpora.Dictionary(processed_corpus)
     bow_corpus = [dictionary.doc2bow(text) for text in processed_corpus]
     corpora.MmCorpus.serialize(path + corpus_path, bow_corpus)
@@ -69,8 +68,33 @@ def train_model(train_path, num_topics=20, path="", corpus_path='corpus.mm', dic
     mSimilar.save(path + mSimilar_path)
 
 
+def train_lda_model(num_topics=20, path="", corpus_path='corpus.mm', dic_path='model.dic',
+                    tfidf_path='model.tfidf', lda_path='model.lda', mSimilar_path='model_lda.mSimilar'):
+    """
+    To train and save models
+    :param train_path:
+    :param path: If all the models are stored in the same directory, use path to describe the dir path
+    :param corpus_path: corpus path
+    :param dic_path: dictionary path
+    :param tfidf_path: tfidf model path
+    :param lda_path: lda model path
+    :param mSimilar_path: MatrixSimilarity path
+    :return:
+    """
+    corpus = corpora.MmCorpus(path + corpus_path)
+    dictionary = corpora.Dictionary.load(path + dic_path)
+    tfidf = models.TfidfModel.load(path + tfidf_path)
+    corpus_tfidf = tfidf[corpus]
+    lda = models.LdaModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics)
+    corpus_lda = lda[corpus_tfidf]
+    lda.save(path + lda_path)
+    mSimilar = similarities.MatrixSimilarity(corpus_lda)
+    mSimilar.save(path + mSimilar_path)
+
+
 def load_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_path='model.tfidf',
-               lsi_path='model.lsi', mSimilar_path='model.mSimilar'):
+               lsi_path='model.lsi', lda_path='model.lda', mSimilar_path='model.mSimilar',
+               lda_mSimilar_path='model_lda.mSimilar', load='lsi'):
     """
     To load trained models
     :param path: If all the models are stored in the same directory, use path to describe the dir path
@@ -89,15 +113,21 @@ def load_model(path="", corpus_path='corpus.mm', dic_path='model.dic', tfidf_pat
     corpus = corpora.MmCorpus(path + corpus_path)
     dict = corpora.Dictionary.load(path + dic_path)
     tfidf = models.TfidfModel.load(path + tfidf_path)
-    lsi = models.LsiModel.load(path + lsi_path)
-    mSimilar = similarities.MatrixSimilarity.load(path + mSimilar_path)
-    return corpus, dict, tfidf, lsi, mSimilar
+    if load == 'lsi':
+        lsi = models.LsiModel.load(path + lsi_path)
+        mSimilar = similarities.MatrixSimilarity.load(path + mSimilar_path)
+        return corpus, dict, tfidf, lsi, mSimilar
+    else:
+        lda = models.LdaModel.load(path + lda_path)
+        lda_mSimilar = similarities.MatrixSimilarity.load(path + lda_mSimilar_path)
+        return corpus, dict, tfidf, lda, lda_mSimilar
 
 
 if __name__ == "__main__":
-    train_model(train_path, 25, "./model_2/")
-    train_model(test_path, 25, "./model_test_2/")
-
+    # train_model('../corpus/train_6/', 20, "./model_topk/")
+    train_model(test_path, 20, "./model_test/")
+    # train_lda_model(20, './model_topk/')
+    train_lda_model(20, './model_test/')
     # corpus, dict, tfidf, lsi, mSimilar = load_model("./model_test/")
 
     # pprint(len(corpus))

@@ -2,13 +2,29 @@ import os
 import shutil
 
 
-def get_files(path):
+def get_files(path, topK=None):
     file_li = []
-    for root, dirs, _ in os.walk(path):
-        for _dir in dirs:
-            for _, _, files in os.walk(os.path.join(root, _dir)):
-                for file in files:
-                    file_li.append(os.path.join(root, _dir, file))
+    for root, dirs, _files in os.walk(path):
+        if dirs:
+            for _dir in dirs:
+                num = 0
+                for _, _, files in os.walk(os.path.join(root, _dir)):
+                    for file in files:
+                        file_li.append(os.path.join(root, _dir, file))
+                        if topK:
+                            num += 1
+                            if num == topK:
+                                break
+                    break
+        # else:
+        #     for f in _files:
+        #         num = 0
+        #         file_li.append(os.path.join(root, f))
+        #         if topK:
+        #             num += 1
+        #             if num == topK:
+        #                 break
+
     return file_li
 
 
@@ -28,4 +44,4 @@ def recreate_dir(dir_path):
 
 
 if __name__ == "__main__":
-    print(get_files("./corpus/test")[2991])
+    print(len(get_files("./corpus/test", 2)))

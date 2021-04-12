@@ -15,40 +15,36 @@ def cut_txt(file_list):
         fi = open(old_file, 'r', encoding='utf-8', errors='ignore')
         text = fi.read()
         new_text = jieba.cut(text, cut_all=False)
-        new_str = " ".join(new_text).replace('\n', '').replace('\u3000', '')
+        new_str = " ".join(new_text).replace('\n', '')
         # pprint(new_str)
         res.append(new_str)
     return res
 
 
-def best_map(L1, L2):
+def best_map(real_label, cluster_label):
     """
-
-    :param L1: 真实标签
-    :param L2: 聚类标签
+    KM
+    :param real_label: 真实标签
+    :param cluster_label: 聚类标签
     :return:
     """
-    Label1 = np.unique(L1)
-    nClass1 = len(Label1)
-    Label2 = np.unique(L2)
-    nClass2 = len(Label2)
-    nClass = np.maximum(nClass1, nClass2)
-    G = np.zeros((nClass, nClass))
-    for i in range(nClass1):
-        ind_cla1 = L1 == Label1[i]
-        ind_cla1 = ind_cla1.astype(float)
-        for j in range(nClass2):
-            ind_cla2 = L2 == Label2[j]
-            ind_cla2 = ind_cla2.astype(float)
-            G[i, j] = np.sum(ind_cla2 * ind_cla1)
+    label1 = np.unique(real_label)
+    n_class1 = len(label1)
+    label2 = np.unique(cluster_label)
+    n_class2 = len(label2)
+    n_class = np.maximum(n_class1, n_class2)
+    G = np.zeros((n_class, n_class))
+    for i in range(n_class1):
+        index_class1 = (real_label == label1[i]).astype(float)
+        for j in range(n_class2):
+            index_class2 = (cluster_label == label2[j]).astype(float)
+            G[i, j] = np.sum(index_class2 * index_class1)
     m = Munkres()
-    index = m.compute(-G.T)
-    index = np.array(index)
-    c = index[:, 1]
-    newL2 = np.zeros(L2.shape)
-    for i in range(nClass2):
-        newL2[L2 == Label2[i]] = Label1[c[i]]
-    return accuracy_score(L1, newL2), newL2
+    c = np.array(m.compute(-G.T))[:, 1]
+    label = np.zeros(cluster_label.shape)
+    for i in range(n_class2):
+        label[cluster_label == label2[i]] = label1[c[i]]
+    return accuracy_score(real_label, label), label
 
 
 def get_list(X):
@@ -64,31 +60,25 @@ def get_list(X):
     return X_list
 
 
-def scores(l, label_pred, X_array):
+def scores(real_label, cluster_label):
     from sklearn import metrics
-    info = metrics.mutual_info_score(l, label_pred)
-    mutual_info = metrics.adjusted_mutual_info_score(l, label_pred)
-    normal_info = metrics.normalized_mutual_info_score(l, label_pred)
+    info = metrics.mutual_info_score(real_label, cluster_label)
+    mutual_info = metrics.adjusted_mutual_info_score(real_label, cluster_label)
+    normal_info = metrics.normalized_mutual_info_score(real_label, cluster_label)
     print("互信息：{0}\n调整互信息：{1}\n标准化互信息：{2}".format(info, mutual_info, normal_info))
-    rand = metrics.adjusted_rand_score(l, label_pred)
+    rand = metrics.adjusted_rand_score(real_label, cluster_label)
     print('兰德系数：', rand)
-    score = metrics.silhouette_score(X_array, label_pred)
-    print("轮廓系数：", score)
 
 
 def draw(X, label):
     from sklearn.decomposition import PCA
-
     pca = PCA(n_components=2)
     pca = pca.fit(X)
     array1 = pca.transform(X)
-
     import matplotlib.pyplot as plt
-
     fig = plt.figure(figsize=(10, 5))
     plt.style.use('seaborn-pastel')
     ax = fig.add_subplot(121)
-
     fig.patch.set_alpha(0.)
     plt.cla()
     for i in range(20):
@@ -97,7 +87,6 @@ def draw(X, label):
     pca = PCA(n_components=3)
     pca = pca.fit(X)
     array1 = pca.transform(X)
-
     ax = fig.add_subplot(122, facecolor=None, projection='3d')
     ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
     ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
@@ -110,4 +99,7 @@ def draw(X, label):
 
 
 if __name__ == "__main__":
-    cut_txt(get_files(train_path))
+    # cut_txt(get_files(train_path))
+    a = np.array([1, 1, 1, 2, 2, 3, 3, 3, 3])
+    b = np.array([2, 2, 2, 1, 1, 4, 4, 4, 4])
+    best_map(a, b)
